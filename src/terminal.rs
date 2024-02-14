@@ -1,39 +1,12 @@
+#[path = "display.rs"]
+mod display;
 
-#[allow(dead_code)]
-pub enum VgaColour {
-    Black = 0,
-    Blue = 1,
-    Green = 2,
-    Cyan = 3,
-    Red = 4,
-    Magenta = 5,
-    Brown = 6,
-    LightGrey = 7,
-    DarkGrey = 8,
-    LightBlue = 9,
-    LightGreen = 10,
-    LightCyan = 11,
-    LightRed = 12,
-    LightMagenta = 13,
-    LightBrown = 14,
-    White = 15,
-}
-
-fn vga_entry_color(fg: VgaColour, bg: VgaColour) -> u8 {
-    fg as u8 | (bg as u8) << 4
-}
-
-fn vga_entry(uc: u8, color: u8) -> u16 {
-    uc as u16 | (color as u16) << 8
-}
-
-static VGA_WIDTH: usize = 80;
-static VGA_HEIGHT: usize = 25;
+use self::display::{VgaColour, VgaEntry, VgaColourCode, VGA_HEIGHT, VGA_WIDTH};
 
 pub struct Terminal {
     pub row: usize,
     pub column: usize,
-    pub colour: u8,
+    pub colour: VgaColour,
     pub buffer: *mut u16,
 }
 
@@ -44,7 +17,7 @@ impl Terminal {
             _ => {
                 unsafe {
                     let index = self.row * VGA_WIDTH + self.column;
-                    *self.buffer.offset(index as isize) = vga_entry(c, self.colour);
+                    *self.buffer.offset(index as isize) = VgaEntry::new(c, self.colour).to_u16();
                 }
                 self.column += 1;
             }
@@ -67,14 +40,14 @@ impl Terminal {
             for x in 0..VGA_WIDTH {
                 unsafe {
                     let index = y * VGA_WIDTH + x;
-                    *self.buffer.offset(index as isize) = vga_entry(' ' as u8, self.colour);
+                    *self.buffer.offset(index as isize) = VgaEntry::new(' ' as u8, self.colour).to_u16();
                 }
             }
         }
     }
 
-    pub fn set_colour(&mut self, fg: VgaColour, bg: VgaColour) {
-        self.colour = vga_entry_color(fg, bg);
+    pub fn set_colour(&mut self, fg: VgaColourCode, bg: VgaColourCode) {
+        self.colour = VgaColour::new(fg, bg);
     }
 
     pub fn set_cursor(&mut self, x: usize, y: usize) {
@@ -86,7 +59,7 @@ impl Terminal {
         for x in 0..VGA_WIDTH {
             unsafe {
                 let index = row * VGA_WIDTH + x;
-                *self.buffer.offset(index as isize) = vga_entry(' ' as u8, self.colour);
+                *self.buffer.offset(index as isize) = VgaEntry::new(' ' as u8, self.colour).to_u16();
             }
         }
     }
@@ -113,8 +86,20 @@ impl Terminal {
     pub fn init(&mut self) {
         self.row = 0;
         self.column = 0;
-        self.colour = vga_entry_color(VgaColour::LightGrey, VgaColour::Black);
+        self.colour = VgaColour::new(VgaColourCode::LightGrey, VgaColourCode::Black);
         self.buffer = 0xB8000 as *mut u16;
+
         self.clear();
+    }
+}
+
+impl Default for Terminal {
+    fn default() -> Terminal {
+        Terminal {
+            row: 0,
+            column: 0,
+            colour: VgaColour::new(VgaColourCode::LightGrey, VgaColourCode::Black),
+            buffer: 0 as *mut u16,
+        }
     }
 }

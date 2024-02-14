@@ -1,8 +1,14 @@
 #![no_std]
 #![no_main]
 
+#![allow(warnings)]
+
 #[path = "terminal.rs"]
 mod terminal;
+
+use terminal::Terminal;
+
+use core::arch::asm;
 
 #[panic_handler]
 fn panic(_:&::core::panic::PanicInfo) -> ! {
@@ -11,8 +17,10 @@ fn panic(_:&::core::panic::PanicInfo) -> ! {
 
 #[no_mangle]
 pub unsafe extern "C" fn kernel_main() -> ! {
-    let mut terminal = terminal::Terminal { row: 0, column: 0, colour: 0, buffer: 0 as *mut u16 };
+    let mut terminal: Terminal = Default::default();
     terminal.init();
+
+    asm!("nop");
 
     terminal.write("Hello, world!");
 

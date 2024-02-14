@@ -28,15 +28,17 @@ done
 
 OBJFILES=$(find . -name '*.o')
 
-../toolchain/bin/i686-elf-gcc -T boot/linker.ld -o ../isodir/boot/rtdemo.bin -ffreestanding -O2 -nostdlib $OBJFILES -lgcc
+# Dumb warning ignore because I'm lazy
+../toolchain/bin/i686-elf-gcc -T boot/linker.ld -o ../isodir/boot/rtdemo.bin -ffreestanding -O2 -nostdlib $OBJFILES -lgcc -Wl,--no-warn-rwx-segment
 
 for file in $OBJFILES; do
 	rm $file
 done
 
-grub-file --is-x86-multiboot ../isodir/boot/rtdemo.bin
-cp ../grub.cfg ../isodir/boot/grub/grub.cfg
-grub-mkrescue -o ../bin/rtdemo.iso ../isodir
+# Some of these are sent to /dev/null to nuke the output, cba to make it look nice
+grub-file --is-x86-multiboot ../isodir/boot/rtdemo.bin > /dev/null 2>&1
+cp ../grub.cfg ../isodir/boot/grub/grub.cfg 
+grub-mkrescue -o ../bin/rtdemo.iso ../isodir > /dev/null 2>&1
 
 cp ../isodir/boot/rtdemo.bin ../bin/rtdemo.bin
 
